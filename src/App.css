@@ -48,3 +48,32 @@ h2 {
   margin: 10px; /* Space between cards */
   flex: 1 1 250px; /* Allow flexible sizing */
 }
+
+.timeline {
+  position: relative;
+  padding: 20px 0;
+}
+
+.timeline-item {
+  position: relative;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  border-left: 3px solid #007bff;
+}
+
+.timeline-item .timeline-time {
+  position: absolute;
+  left: -90px;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.timeline-item .timeline-content {
+  margin-left: 30px;
+}
+
+.timeline-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+}
