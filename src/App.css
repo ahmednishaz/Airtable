@@ -1,3 +1,5 @@
+@import url("https://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css");
+
 /* src/App.css */
 body {
   background-color: #f4f4f4; /* Light background for contrast */
@@ -49,31 +51,51 @@ h2 {
   flex: 1 1 250px; /* Allow flexible sizing */
 }
 
-.timeline {
-  position: relative;
-  padding: 20px 0;
-}
-
-.timeline-item {
-  position: relative;
-  padding: 10px 15px;
-  margin-bottom: 15px;
-  border-left: 3px solid #007bff;
-}
-
-.timeline-item .timeline-time {
+.timelineBar {
+  width: 2px;
+  background-color: #bdbdbd;
+  display: inline-block;
   position: absolute;
-  left: -90px;
-  font-size: 12px;
-  color: #aaa;
+  height: 100%;
+  left: 50%;
+  margin-left: -1px; /* Adjust to center the bar */
 }
 
-.timeline-item .timeline-content {
-  margin-left: 30px;
+.shadowBox {
+  box-shadow: rgba(0, 0, 0, 0.796875) 0px 0px 2px;
+  border: 2px solid white;
+  border-radius: 10px;
+  margin: 10px;
+  background-color: #ffffff;
+  padding: 15px; /* Added padding for better spacing */
 }
 
-.timeline-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: bold;
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  background-color: #bdbdbd;
+  position: absolute;
+  left: 50%;
+  top: 15px; /* Adjust as needed for vertical alignment */
+  margin-left: -5px; /* Center the dot */
+  border-radius: 50%; /* Use border-radius to create a perfect circle */
+}
+
+/* Additional styling for rows to ensure timeline alignment */
+.row {
+  position: relative; /* Required for absolute positioned elements inside */
+}
+
+.row .shadowBox {
+  position: relative; /* Required to position the shadow box correctly */
+  z-index: 1; /* Ensure shadow box appears above the dot */
+}
+
+.connectingLine {
+  width: 2px;
+  background-color: #bdbdbd; /* Line color */
+  height: 50px; /* Adjust height as needed */
+  margin: 0 auto; /* Center the line */
+  position: relative;
+  left: 50%;
 }

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./App.css"; // Import the CSS for timeline styling
 
 const App = () => {
   const [countryName, setCountryName] = useState("");
@@ -14,6 +13,7 @@ const App = () => {
 
   const handleCountryChange = (e) => {
     const value = e.target.value;
+    // Capitalize first letter of the country name
     setCountryName(value.charAt(0).toUpperCase() + value.slice(1));
   };
 
@@ -23,10 +23,20 @@ const App = () => {
     }
   };
 
-  const createHeaders = () => ({
-    Authorization: `Bearer patxCyw5js0YvlQs5.c999816a31ada12eeed104d1b04d3d4d90200a32d20e76b0ac7e7f31877ea1c2`,
-    "Content-Type": "application/json",
-  });
+  const createHeaders = () => {
+    return {
+      Authorization: `Bearer patxCyw5js0YvlQs5.c999816a31ada12eeed104d1b04d3d4d90200a32d20e76b0ac7e7f31877ea1c2`,
+      "Content-Type": "application/json",
+    };
+  };
+
+  const handleOperatorClick = async (operator) => {
+    setSelectedOperator(operator);
+    fetchSimDetails(operator.operatorID);
+
+    const logs = await fetchOperatorLog(operator.operatorID); // Fetch logs
+    setOperatorLogs(logs); // Set the logs received from the fetch function
+  };
 
   const fetchOperatorsDetails = async () => {
     setLoading(true);
@@ -41,6 +51,8 @@ const App = () => {
           params: { filterByFormula: `{Name} = "${countryName}"` },
         }
       );
+
+      console.log("Country Response:", countryResponse.data); // Log country response
 
       if (countryResponse.data.records.length > 0) {
         const countryRecord = countryResponse.data.records[0];
@@ -60,6 +72,7 @@ const App = () => {
           (res) => res.data.fields
         );
 
+        console.log("Operators Details:", filteredOperators); // Log operator details
         setOperatorsDetails(filteredOperators);
       } else {
         setError("No records found for this country.");
@@ -82,6 +95,8 @@ const App = () => {
           params: { filterByFormula: `{Operator} = "${operatorId}"` },
         }
       );
+
+      console.log("SIM Response:", simResponse.data); // Log SIM response
 
       if (simResponse.data.records.length > 0) {
         const simDetailsData = simResponse.data.records.map(
@@ -108,29 +123,27 @@ const App = () => {
         }
       );
 
+      console.log("Operator Log Response:", logResponse.data); // Log operator log response
+
       if (logResponse.data.records.length > 0) {
         const OperatorLogDetailsData = logResponse.data.records.map(
-          (record) => ({
-            id: record.id,
-            timestamp: record.createdTime,
-            action: record.fields.Action || "N/A",
-            status: record.fields.Status || "N/A",
-          })
+          (record) => record.fields
         );
-        setOperatorLogs(OperatorLogDetailsData);
+
+        // Sort logs by "Done on" date (assuming it's in a format that can be parsed by Date)
+        OperatorLogDetailsData.sort(
+          (a, b) => new Date(b["Done on"]) - new Date(a["Done on"])
+        );
+
+        return OperatorLogDetailsData; // Return the sorted logs
       } else {
-        setOperatorLogs([]); // No logs found
+        return []; // Return an empty array if no logs found
       }
     } catch (err) {
       console.error("Error fetching Operator Log data:", err);
       setError("Error fetching Operator Log data. Please try again.");
+      return []; // Return an empty array on error
     }
-  };
-
-  const handleOperatorClick = async (operator) => {
-    setSelectedOperator(operator);
-    fetchSimDetails(operator.operatorID);
-    await fetchOperatorLog(operator.operatorID); // Fetch logs
   };
 
   return (
@@ -167,6 +180,8 @@ const App = () => {
               <th>MCCMNC</th>
               <th>CCNDC</th>
               <th>Status</th>
+              {/* <th>Country ID</th> */}
+              {/* <th>Country Name</th> */}
               <th>Sim Count</th>
               <th>Action</th>
             </tr>
@@ -178,6 +193,13 @@ const App = () => {
                 <td>{operator.MCCMNC || "N/A"}</td>
                 <td>{operator.CCNDC || "N/A"}</td>
                 <td>{operator.Status || "N/A"}</td>
+                {/* <td>{operator.countryID || "N/A"}</td> */}
+                {/* <td>
+                  {(Array.isArray(operator.CountryName)
+                    ? operator.CountryName
+                    : []
+                  ).join(", ") || "N/A"}
+                </td> */}
                 <td>{operator["Sim Count"] || "N/A"}</td>
                 <td>
                   <button
@@ -251,6 +273,191 @@ const App = () => {
                   </td>
                   <td>{selectedOperator["Sim Count"] || "N/A"}</td>
                 </tr>
+                <tr>
+                  <td>
+                    <strong>Operator ID:</strong>
+                  </td>
+                  <td>{selectedOperator.operatorID || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>IN/OUT Statuses:</strong>
+                  </td>
+                  <td>
+                    <div className="row">
+                      <div className="col-6">
+                        <strong>IN</strong>
+                        <ul className="list-unstyled">
+                          <li>
+                            GSM:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.IN_GSM === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.IN_GSM === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.IN_GSM === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.IN_GSM || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            GPRS:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.IN_GPRS === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.IN_GPRS === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.IN_GPRS === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.IN_GPRS || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            LTE:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.IN_LTE === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.IN_LTE === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.IN_LTE === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.IN_LTE || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            5G NSA:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.IN_5G_NSA === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.IN_5G_NSA === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.IN_5G_NSA === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.IN_5G_NSA || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            CAMEL:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.IN_CAMEL === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.IN_CAMEL === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.IN_CAMEL === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.IN_CAMEL || "N/A"}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="col-6">
+                        <strong>OUT</strong>
+                        <ul className="list-unstyled">
+                          <li>
+                            GSM:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.OUT_GSM === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.OUT_GSM === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.OUT_GSM === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.OUT_GSM || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            GPRS:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.OUT_GPRS === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.OUT_GPRS === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.OUT_GPRS === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.OUT_GPRS || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            LTE:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.OUT_LTE === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.OUT_LTE === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.OUT_LTE === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.OUT_LTE || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            5G NSA:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.OUT_5G_NSA === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.OUT_5G_NSA === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.OUT_5G_NSA === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.OUT_5G_NSA || "N/A"}
+                            </span>
+                          </li>
+                          <li>
+                            CAMEL:{" "}
+                            <span
+                              className={`badge ${
+                                selectedOperator.OUT_CAMEL === "LIVE"
+                                  ? "badge-success"
+                                  : selectedOperator.OUT_CAMEL === "TESTING"
+                                  ? "badge-warning"
+                                  : selectedOperator.OUT_CAMEL === "N/A"
+                                  ? "badge-danger"
+                                  : "badge-secondary"
+                              }`}
+                            >
+                              {selectedOperator.OUT_CAMEL || "N/A"}
+                            </span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -260,55 +467,71 @@ const App = () => {
       {simDetails && (
         <div className="mt-4">
           <h3>SIM Details:</h3>
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>SIM ID</th>
-                <th>Operator</th>
-                <th>Status</th>
-                <th>Created At</th>
-              </tr>
-            </thead>
-            <tbody>
-              {simDetails.length > 0 ? (
-                simDetails.map((sim, index) => (
-                  <tr key={index}>
-                    <td>{sim["SIM ID"] || "N/A"}</td>
-                    <td>{sim.Operator || "N/A"}</td>
-                    <td>{sim.Status || "N/A"}</td>
-                    <td>{sim["Created At"] || "N/A"}</td>
+          <div className="border p-3">
+            {simDetails.length > 0 ? (
+              <table className="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>SIM ID</th>
+                    <th>IMSI</th>
+                    <th>MSISDN</th>
+                    <th>Status</th>
+                    <th>Type</th>
+                    <th>Comments</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center">
-                    No SIM details found for this operator.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {operatorLogs.length > 0 && (
-        <div className="mt-4">
-          <h3>Operator Logs:</h3>
-          <div className="timeline">
-            {operatorLogs.map((log, index) => (
-              <div key={index} className="timeline-item">
-                <div className="timeline-time">
-                  {new Date(log.timestamp).toLocaleString()}
-                </div>
-                <div className="timeline-content">
-                  <h4 className="timeline-title">{log.action}</h4>
-                  <p>Status: {log.status}</p>
-                </div>
-              </div>
-            ))}
+                </thead>
+                <tbody>
+                  {simDetails.map((sim, index) => (
+                    <tr key={index}>
+                      <td>{sim["Sim#"] || "N/A"}</td>
+                      <td>{sim.IMSI || "N/A"}</td>
+                      <td>{sim.MSISDN || "N/A"}</td>
+                      <td>{sim.Status || "N/A"}</td>
+                      <td>{sim.Type || "N/A"}</td>
+                      <td>{sim.Comments || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No SIM details found for this operator.</p>
+            )}
           </div>
         </div>
       )}
+      <div className="mt-4">
+        <h3>Operator Log Details:</h3>
+        <div className="border p-3">
+          {operatorLogs.length > 0 ? (
+            <table className="table table-bordered">
+              <thead>
+                <tr>
+                  <th>Done On</th>
+                  <th>Purpose</th>
+                  <th>Direction</th>
+                  <th>Type</th>
+                  <th>IPX</th>
+                  <th>Log Action/Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {operatorLogs.map((log, index) => (
+                  <tr key={index}>
+                    <td>{log["Done on"] || "N/A"}</td>
+                    <td>{log.Purpose || "N/A"}</td>
+                    <td>{log.Direction || "N/A"}</td>
+                    <td>{log.Type || "N/A"}</td>
+                    <td>{log.IPX || "N/A"}</td>
+                    <td>{log["Log action/detail"] || "N/A"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No log details found for this operator.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
